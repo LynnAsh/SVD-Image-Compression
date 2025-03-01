@@ -1,14 +1,17 @@
 from PIL import Image
 import numpy as np
 import os
+from math import log10, sqrt
+import cv2
 
 imgFile = input('Image file name or path: ')
 
-# gets and returns several k values to test and compare
-def get_k_array() -> list | None:
-    isValid = False
+fext = 'jpg' # defines file extension images are saved as for testing
+fpath = 'compressed-images' # defines folder name for compressed images (cannot be blank)
 
-    while not isValid:
+# gets and returns several k values to test and compare
+def get_k_array() -> list:
+    while 1:
         k_array = input('Enter values of k to test (k1 k2 k3 ...): ')
         try:
             k_array = list(map(int, k_array.split(' ')))
@@ -27,9 +30,37 @@ def get_image_size(image) -> float:
     return image_size
 
 def save_compressed_image(image, k) -> None:
+    if not os.path.exists(f'{fpath}/'): # checks if folder already exists, if not creates it
+        os.mkdir(f'{fpath}/')
+
     image = image.astype(np.uint8) # rounds off floats to ints
     image = Image.fromarray(image) # converts back to an image file to save
-    image.save(f'comp{k}.jpg')
+    image.save(os.path.join(f'{fpath}/', f'comp{k}.{fext}'))
+
+# calculates psnr (peak signal-to-noise ratio) - original code written by Geeks For Geeks and edited by me
+def get_psnr(ogImage, cmpImage) -> float:
+    ogImage = cv2.imread(ogImage)
+    cmpImage = cv2.imread(cmpImage)
+
+    mse = np.mean((ogImage - cmpImage) ** 2)
+    if mse == 0:
+        return 100
+
+    max_pixel = 255.0
+    psnr = round((20 * log10(max_pixel / sqrt(mse))), 2)
+    return psnr
+
+# writes the file size, compression ratio and psnr to a file in that order
+firstCall = True
+def write_info_to_file(size, cmpRatio, psnr) -> None:
+    global firstCall
+    if firstCall: # checks if its the first call of the function, if yes the file will be cleared of any previous data that may exist
+        file = open(f'{fpath}/results.txt', 'w')
+        file.close()
+        firstCall = False
+
+    with open(f'{fpath}/results.txt', 'a') as file:
+        file.write(f'{size} {cmpRatio} {psnr}\n')
 
 
 
@@ -54,9 +85,13 @@ def compress_image_greyscale(image) -> None:
 
             save_compressed_image(compressedImg, k)
 
-            imgSizeCmp = get_image_size(f'comp{k}.jpg')
-            cmpRatio = imgSizeOG / imgSizeCmp # calculates the compression ratio
-            print(f'[k={k}] File Size: {imgSizeCmp} kilobytes | Compression Ratio: {round(cmpRatio, 4)}')
+            imgPath = f'{fpath}/comp{k}.{fext}'
+            imgSizeCmp = get_image_size(imgPath)
+            psnr = get_psnr(imgFile, imgPath)
+            cmpRatio = round((imgSizeOG / imgSizeCmp), 4) # calculates the compression ratio
+            print(f'[k={k}] File Size: {imgSizeCmp} kilobytes | Compression Ratio: {cmpRatio} | PSNR: {psnr}')
+
+            write_info_to_file(imgSizeCmp, cmpRatio, psnr)
 
         except ValueError:
             print(f'k larger than singular values matrix (k={k})')
@@ -100,31 +135,34 @@ def compress_image_color(image) -> None:
             compressedG = UG @ SG_compressed @ VG
             compressedB = UB @ SB_compressed @ VB
 
-            compressedImg = np.stack((compressedR, compressedB, compressedG), axis=-1) # stacks the 3 color channels back into a single image matrix
+            compressedImg = np.stack((compressedR, compressedG, compressedB), axis=-1) # stacks the 3 color channels back into a single image matrix
 
             save_compressed_image(compressedImg, k)
 
-            imgSizeCmp = get_image_size(f'comp{k}.jpg')
-            cmpRatio = imgSizeOG / imgSizeCmp
-            print(f'[k={k}] File Size: {imgSizeCmp} kilobytes | Compression Ratio: {round(cmpRatio, 4)}')
+            imgPath = f'{fpath}/comp{k}.{fext}'
+            imgSizeCmp = get_image_size(imgPath)
+            psnr = get_psnr(imgFile, imgPath)
+            cmpRatio = round((imgSizeOG / imgSizeCmp), 4)  # calculates the compression ratio
+            print(f'[k={k}] File Size: {imgSizeCmp} kilobytes | Compression Ratio: {cmpRatio} | PSNR: {psnr}')
+
+            write_info_to_file(imgSizeCmp, cmpRatio, psnr)
 
         except ValueError:
             print(f'k larger than singular values matrix (k={k})')
 
 
+
 try:
     with Image.open(imgFile) as img:
-        isRunning = True
-
-        while isRunning:
+        while 1:
             colorPref = input('Color compression (c) or greyscale (g)?: ')
 
             if colorPref == 'g':
                 compress_image_greyscale(img)
-                isRunning = False
+                break
             elif colorPref == 'c':
                 compress_image_color(img)
-                isRunning = False
+                break
             else:
                 print('Invalid option')
 
