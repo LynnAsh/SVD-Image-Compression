@@ -2,6 +2,7 @@
 # SVD Image Compression
 
 A simple program that takes advantage of SVD (Singular Value Decomposition) to compress images
+
 - Works in greyscale **and** color!
 
 ### Install libraries
