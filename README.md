@@ -4,6 +4,12 @@
 A simple program that takes advantage of SVD (Singular Value Decomposition) to compress images
  - Works in greyscale **and** color!
 
+### Install libraries
+```
+py -m pip install numpy
+py -m pip install pillow
+```
+
 ### To-do
  - Hopefully fix the color channels distorting after compression
  - Soon going to add a way to plot points and compare k to the Compression Ratio and MSE/PSNR
