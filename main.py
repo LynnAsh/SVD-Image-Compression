@@ -4,6 +4,8 @@ import os
 from math import log10, sqrt
 import cv2
 
+from data import create_graph
+
 imgFile = input('Image file name or path: ')
 
 fext = 'jpg' # defines file extension images are saved as for testing
@@ -52,7 +54,7 @@ def get_psnr(ogImage, cmpImage) -> float:
 
 # writes the file size, compression ratio and psnr to a file in that order
 firstCall = True
-def write_info_to_file(size, cmpRatio, psnr) -> None:
+def write_info_to_file(size, cmpRatio, psnr, k) -> None:
     global firstCall
     if firstCall: # checks if its the first call of the function, if yes the file will be cleared of any previous data that may exist
         file = open(f'{fpath}/results.txt', 'w')
@@ -60,7 +62,7 @@ def write_info_to_file(size, cmpRatio, psnr) -> None:
         firstCall = False
 
     with open(f'{fpath}/results.txt', 'a') as file:
-        file.write(f'{size} {cmpRatio} {psnr}\n')
+        file.write(f'{k} {size} {cmpRatio} {psnr} \n')
 
 
 
@@ -91,10 +93,12 @@ def compress_image_greyscale(image) -> None:
             cmpRatio = round((imgSizeOG / imgSizeCmp), 4) # calculates the compression ratio
             print(f'[k={k}] File Size: {imgSizeCmp} kilobytes | Compression Ratio: {cmpRatio} | PSNR: {psnr}')
 
-            write_info_to_file(imgSizeCmp, cmpRatio, psnr)
+            write_info_to_file(imgSizeCmp, cmpRatio, psnr, k)
 
         except ValueError:
             print(f'k larger than singular values matrix (k={k})')
+
+    create_graph()
 
 def compress_image_color(image) -> None:
     kArr = get_k_array()
@@ -145,10 +149,12 @@ def compress_image_color(image) -> None:
             cmpRatio = round((imgSizeOG / imgSizeCmp), 4)  # calculates the compression ratio
             print(f'[k={k}] File Size: {imgSizeCmp} kilobytes | Compression Ratio: {cmpRatio} | PSNR: {psnr}')
 
-            write_info_to_file(imgSizeCmp, cmpRatio, psnr)
+            write_info_to_file(imgSizeCmp, cmpRatio, psnr, k)
 
         except ValueError:
             print(f'k larger than singular values matrix (k={k})')
+
+    create_graph()
 
 
 
